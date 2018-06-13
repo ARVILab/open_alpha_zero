@@ -149,12 +149,14 @@ class EnvironmentSelector():
         return None
 
     def build_basic_checkers_agent(self, agent_profile, native_multi_gpu_enabled=False):
+        game = self.game_mapping[agent_profile.game]
+        
         if agent_profile == EnvironmentSelector.CHECKERS_AGENT_ALPHA_BETA:
             return CheckersAgentAlphaBeta()
         elif agent_profile == EnvironmentSelector.CHECKERS_AGENT_RANDOM:
             return AgentRandom()
         elif agent_profile == EnvironmentSelector.CHECKERS_AGENT_HUMAN:
-            return CheckersHumanAgent()
+            return CheckersHumanAgent(game)
         return None
 
     def build_native_checkers_rcnn_agent(self, agent_profile, native_multi_gpu_enabled=False):

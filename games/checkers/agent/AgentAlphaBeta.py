@@ -40,7 +40,7 @@ class CheckersAgentAlphaBeta(Agent):
         return probs, value
 
     def clone(self):
-        return AgentAlphaBeta()
+        return CheckersAgentAlphaBeta()
 
     def alpha_beta(self, game, depth, alpha, beta, maximizing_player):
         """
