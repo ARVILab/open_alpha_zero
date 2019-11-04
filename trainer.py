@@ -13,7 +13,7 @@ def throw_error(message):
 
 def train(agent_profile, agent_path, out_agent_path,
           memory_path=None, game_memory=None,
-          train_distributed=False, train_distributed_native=False,
+          train_distributed=False, kungfu_train_distirbuted=False, train_distributed_native=False,
           epochs=1):
     env_selector = EnvironmentSelector()
 
@@ -44,6 +44,11 @@ def train(agent_profile, agent_path, out_agent_path,
         if hvd.rank() == 0:
             # save only on the main server
             agent.save(out_agent_path)
+    elif kungfu_train_distirbuted:
+        from kungfu import current_rank
+        if current_rank == 0:
+            # save only on the main server
+            agent.save(out_agent_path)
     else:
         agent.save(out_agent_path)
 
@@ -65,7 +70,12 @@ if __name__ == "__main__":
 
     parser.add_argument('--train_distributed', dest='train_distributed', action='store_true',
                         help="Train NN in cluster specified by hosts option")
+    parser.set_defaults(kungfu_train_distributed=False)
+                        
+    parser.add_argument('--kungfu_train_distributed', dest='kungfu_train_distributed', action='store_true',
+                        help="Train NN using KungFu in cluster specified by hosts option")
     parser.set_defaults(train_distributed=False)
+    
 
     parser.add_argument('--train_distributed_native', dest='train_distributed_native', action='store_true',
                         help="Enable native distributed training on main machine")
@@ -86,8 +96,13 @@ if __name__ == "__main__":
     if not options.out_agent_path:
         parser.error('Out Agent model path must be selected')
 
+    if options.kungfu_train_distirbuted and options.train_distributed:
+        parser.error('Cannot use both Horovod and KungFu at the same time.')
+ 
+
     train(options.agent_profile, options.agent_path,
           options.out_agent_path, memory_path=options.memory_path,
           train_distributed=options.train_distributed,
+          kungfu_train_distirbuted=options.kungfu_train_distributed,
           train_distributed_native=options.train_distributed_native,
           epochs=options.epochs)

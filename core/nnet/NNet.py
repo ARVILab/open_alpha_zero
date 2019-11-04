@@ -22,14 +22,14 @@ class NNet(ABC):
     OUTPUT_NODE_NAME_FROZEN = "output_node"
 
     def __init__(self, observation_size_x, observation_size_y, observation_size_z, action_size,
-                 native_multi_gpu=False, multi_gpu_n=2, horovod_distributed=False):
+                 native_multi_gpu=False, multi_gpu_n=2, horovod_distributed=False, kungfu_distributed=False):
 
         self.observation_size_x = observation_size_x
         self.observation_size_y = observation_size_y
         self.observation_size_z = observation_size_z
         self.action_size = action_size
 
-        if native_multi_gpu and horovod_distributed:
+        if native_multi_gpu and horovod_distributed or native_multi_gpu and kungfu_distributed:
             assert False, "Native and Horovod multi gpu training " \
                           "modes should not be enabled at the same time!"
 
@@ -37,6 +37,7 @@ class NNet(ABC):
         self.multi_gpu_n = multi_gpu_n
 
         self.horovod_distributed = horovod_distributed
+        self.kungfu_distributed = kungfu_distributed
 
         self._INPUT_NODE_UNIQUE_IDENTIFIER = ["input_1"]
         self._OUTPUT_NODE_UNIQUE_IDENTIFIER = ["out_prob", "out_value"]
@@ -158,6 +159,22 @@ class NNet(ABC):
                       callbacks=callbacks,
                       epochs=epochs,
                       verbose=verbose)
+        if self.kungfu_distributed:
+            from kungfu.tensorflow.initializer import BroadcastGlobalVariablesCallback
+
+             callbacks = [
+                # KungFu: broadcast initial variable states from rank 0 to all other processes.
+                # This is necessary to ensure consistent initialization of all workers when
+                # training is started with random weights or restored from a checkpoint.
+                BroadcastGlobalVariablesCallback(),
+            ]
+
+            model.fit(x=input_boards,
+                      y=[target_pis, target_vs],
+                      batch_size=batch_size,
+                      callbacks=callbacks,
+                      epochs=epochs,
+                      verbose=verbose)
         else:
             model.fit(x=input_boards, y=[target_pis, target_vs], batch_size=batch_size, epochs=epochs, verbose=verbose)
 
@@ -176,7 +193,7 @@ class NNet(ABC):
     def clone(self):
         return NNet(self.observation_size_x, self.observation_size_y, self.observation_size_z, self.action_size,
                     native_multi_gpu=self.native_multi_gpu, multi_gpu_n=self.multi_gpu_n,
-                    horovod_distributed=self.horovod_distributed)
+                    horovod_distributed=self.horovod_distributed, kungfu_distributed=self.kungfu_distributed)
 
     def predict(self, observation):
         if self.model_optimized:

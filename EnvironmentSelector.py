@@ -90,6 +90,10 @@ class EnvironmentSelector():
             EnvironmentSelector.CHECKERS_AGENT_TRAIN_RCNN_DISTRIBUTED: self.build_horovod_checkers_agent,
             EnvironmentSelector.CHECKERS_AGENT_TEST_AGENT_RCNN_DISTRIBUTED: self.build_horovod_checkers_agent,
 
+            EnvironmentSelector.CHECKERS_AGENT_TRAIN_RCNN_KUNGFU_DISTRIBUTED: self.build_kungfu_checkers_agent,
+            EnvironmentSelector.CHECKERS_AGENT_TEST_AGENT_RCNN_KUNGFU_DISTRIBUTED: self.build_kungfu_checkers_agent,
+
+
             EnvironmentSelector.TICTACTOE_AGENT_TRAIN: self.build_tictactoe_train_agent,
             EnvironmentSelector.TICTACTOE_AGENT_RANDOM: self.build_tictactoe_agent,
             EnvironmentSelector.TICTACTOE_AGENT_HUMAN: self.build_tictactoe_agent,
@@ -111,6 +115,9 @@ class EnvironmentSelector():
 
             EnvironmentSelector.CHECKERS_AGENT_TRAIN_RCNN_DISTRIBUTED,
             EnvironmentSelector.CHECKERS_AGENT_TEST_AGENT_RCNN_DISTRIBUTED,
+
+            EnvironmentSelector.CHECKERS_AGENT_TRAIN_RCNN_KUNGFU_DISTRIBUTED,
+            EnvironmentSelector.CHECKERS_AGENT_TEST_AGENT_RCNN_KUNGFU_DISTRIBUTED,
 
             EnvironmentSelector.TICTACTOE_AGENT_TRAIN,
             EnvironmentSelector.TICTACTOE_AGENT_RANDOM,
@@ -220,6 +227,30 @@ class EnvironmentSelector():
                              max_predict_time=10)
         else:
             return None
+
+    # KungFu agent
+    def build_kungfu_checkers_agent(self, agent_profile, native_multi_gpu_enabled=False):
+        from games.checkers.nnet.CheckersResNNetKungFuDistributed import CheckersResNNetKungFuDistributed
+
+        assert not native_multi_gpu_enabled, "ERROR: KungfFu NNet does not support native multi-gpu mode!"
+
+        game = self.game_mapping[agent_profile.game]
+
+        nnet = CheckersResNNetKungFuDistributed(game.get_observation_size()[0], game.get_observation_size()[1],
+                                               game.get_observation_size()[2], game.get_action_size(),
+                                               horovod_distributed=False, kungfu_distributed=True)
+
+        agent_nnet = AgentNNet(nnet)
+
+        if agent_profile == EnvironmentSelector.CHECKERS_AGENT_TRAIN_RCNN_KUNGFU_DISTRIBUTED:
+            return AgentMCTS(agent_nnet, exp_rate=AgentMCTS.EXPLORATION_RATE_INIT, numMCTSSims=1500,
+                             max_predict_time=5)
+        elif agent_profile == EnvironmentSelector.CHECKERS_AGENT_TEST_AGENT_RCNN_KUNGFU_DISTRIBUTED:
+            return AgentMCTS(agent_nnet, exp_rate=AgentMCTS.NO_EXPLORATION, numMCTSSims=1500,
+                             max_predict_time=10)
+        else:
+            return None
+
 
     def build_tictactoe_train_agent(self, agent_profile, native_multi_gpu_enabled=False):
 
