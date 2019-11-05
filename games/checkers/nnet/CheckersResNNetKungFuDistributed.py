@@ -31,16 +31,12 @@ class CheckersResNNetKungFuDistributed(NNet):
     l2_reg = 1e-4
     value_fc_size = 256
 
-    def init_horovod(self):
+    def build_model(self):
         # TODO (may be bad for KungFu) pin GPU to be used to process local rank (one GPU per process)
         config = tf.ConfigProto()
         config.gpu_options.allow_growth = True
         config.gpu_options.visible_device_list = str(kf.current_rank())
         K.set_session(tf.Session(config=config))
-
-    def build_model(self):
-
-        self.init_horovod()
 
         input_boards = Input(
             shape=(self.observation_size_x, self.observation_size_y, self.observation_size_z))  # s: batch_size x board_x x board_y
@@ -90,8 +86,8 @@ class CheckersResNNetKungFuDistributed(NNet):
         opt = keras.optimizers.Adadelta(1.0 * kf.current_cluster_size())
 
         # KungFu: add KungFu Distributed Optimizer.
-        from kungfu.tensorflow.optimizers import SynchronousAveragingOptimizer
-        opt = SynchronousAveragingOptimizer(opt)
+        from kungfu.tensorflow.optimizers import SynchronousSGDOptimizer
+        opt = SynchronousSGDOptimizer(opt)
 
         model.compile(loss=['categorical_crossentropy', 'mean_squared_error'],
                       optimizer=opt)

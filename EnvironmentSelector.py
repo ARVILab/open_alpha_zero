@@ -59,6 +59,12 @@ class EnvironmentSelector():
                                                          "checkers_agent_train_rcnn_distributed")
     CHECKERS_AGENT_TEST_AGENT_RCNN_DISTRIBUTED = AgentProfile(GAME_CHECKERS_DEFAULT,
                                                               "checkers_agent_test_agent_rcnn_distributed")
+    
+    # KungFu
+    CHECKERS_AGENT_TRAIN_RCNN_KUNGFU_DISTRIBUTED = AgentProfile(GAME_CHECKERS_DEFAULT,
+                                                         "checkers_agent_train_rcnn_kungfu_distributed")
+    CHECKERS_AGENT_TEST_AGENT_RCNN_KUNGFU_DISTRIBUTED = AgentProfile(GAME_CHECKERS_DEFAULT,
+                                                              "checkers_agent_test_agent_rcnn_kungfu_distributed")
 
     TICTACTOE_AGENT_TRAIN = AgentProfile(GAME_TICTACTOE_DEFAULT, "tictactoe_agent_train_default")
     TICTACTOE_AGENT_RANDOM = AgentProfile(GAME_TICTACTOE_DEFAULT, "tictactoe_agent_random")

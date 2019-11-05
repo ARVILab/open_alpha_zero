@@ -159,10 +159,10 @@ class NNet(ABC):
                       callbacks=callbacks,
                       epochs=epochs,
                       verbose=verbose)
-        if self.kungfu_distributed:
+        elif self.kungfu_distributed:
             from kungfu.tensorflow.initializer import BroadcastGlobalVariablesCallback
 
-             callbacks = [
+            callbacks = [
                 # KungFu: broadcast initial variable states from rank 0 to all other processes.
                 # This is necessary to ensure consistent initialization of all workers when
                 # training is started with random weights or restored from a checkpoint.

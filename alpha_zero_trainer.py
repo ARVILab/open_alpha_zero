@@ -117,6 +117,8 @@ def train(agent_profile, memory_path, cur_agent_path, new_agent_path,
             kungfu_command = generate_kungfu_distributed_command(hosts, True)
 
             command = kungfu_command + " " + command
+
+            print("[DEBUG] KungFu command built " + command)
         else:
             if train_distributed:
                 # train in cluster. Requires at least 25 gb/s network bandwidth
