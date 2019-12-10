@@ -63,6 +63,22 @@ def generate_open_mpi_distributed_command(hosts, use_gpu):
 
     return command
 
+def generate_kungfu_distributed_command(hosts, use_gpu):
+    processes = 0
+    hosts_string = ""
+    for idx, host in enumerate(hosts):
+        if use_gpu:
+            processes += host.num_gpu
+            hosts_string += ("," if idx > 0 else "") + "%s:%d" % (host.ip, host.num_gpu)
+        else:
+            processes += 1
+            hosts_string += ("," if idx > 0 else "") + host.ip
+
+    command = "mpirun"
+    command += " -np %d" % processes
+    command += " -H %s" % hosts_string
+
+    return command
 
 def execute_commant_synch(command, show_output=True):
     print("execute command: ", command)
@@ -79,7 +95,7 @@ def execute_commant_synch(command, show_output=True):
 
 
 def train(agent_profile, memory_path, cur_agent_path, new_agent_path,
-          hosts=None, train_distributed=False, train_distributed_native=False,
+          hosts=None, train_distributed=False, kungfu_train_distributed=False, train_distributed_native=False,
           epochs=1):
     # call trainer script
     command = "python3 trainer.py"
@@ -96,6 +112,13 @@ def train(agent_profile, memory_path, cur_agent_path, new_agent_path,
 
         if train_distributed_native:
             command += " --train_distributed_native"
+        elif kungfu_train_distributed:
+            command += " --train_distributed"
+            kungfu_command = generate_kungfu_distributed_command(hosts, True)
+
+            command = kungfu_command + " " + command
+
+            print("[DEBUG] KungFu command built " + command)
         else:
             if train_distributed:
                 # train in cluster. Requires at least 25 gb/s network bandwidth
@@ -303,6 +326,10 @@ if __name__ == "__main__":
                         help="Train NN in cluster specified by hosts option")
     parser.set_defaults(train_distributed=False)
 
+    parser.add_argument('--kungfu_train_distributed', dest='kungfu_train_distributed', action='store_true',
+                        help="Train NN in KungFu cluster specified by hosts option")
+    parser.set_defaults(kungfu_train_distributed=False)
+
     parser.add_argument('--skip_evaluation', dest='skip_evaluation', action='store_true',
                         help="Skip evaluation phase like in the latest version of Google's Alpha Zero.")
     parser.set_defaults(skip_evaluation=False)
@@ -322,6 +349,9 @@ if __name__ == "__main__":
 
     if not options.workspace:
         parser.error('Workspace path must be selected')
+
+    if options.kungfu_train_distributed and options.train_distributed:
+        parser.error('Cannot use Horovod and KungFu at the same time.')
 
     # parse hosts
     hosts = None
@@ -378,6 +408,7 @@ if __name__ == "__main__":
             print("Agent model was not detected. Perform initial training...")
             train(options.agent_profile, options.memory_path, None, cur_agent_path,
                   hosts=hosts, train_distributed=options.train_distributed,
+                  kungfu_train_distributed=options.kungfu_train_distributed,
                   train_distributed_native=options.train_distributed_native,
                   epochs=10)
         else:
@@ -418,6 +449,7 @@ if __name__ == "__main__":
 
         train(options.agent_profile, memory_path, cur_agent_path, contestant_agent_path,
               hosts=hosts, train_distributed=options.train_distributed,
+              kungfu_train_distributed=options.kungfu_train_distributed,
               train_distributed_native=options.train_distributed_native,
               epochs=1)
 
